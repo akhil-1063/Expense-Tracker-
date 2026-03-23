@@ -1,186 +1,80 @@
-import { useEffect, useReducer } from "react";
+import { useReducer } from "react";
+import { expenseReducer } from "../reducers/expenseReducer";
+import { filterReducer, filterInitialState } from "../reducers/filterReducer";
+import {
+  addExpense,
+  setCategory,
+  setDate,
+  setMinAmount,
+  setMaxAmount,
+  setSort,
+} from "../actions/expenseActions";
 
-type Expense = {
-  amount: number;
-  category: string;
-  date: string;
-  note: string;
-};
-
-type State = {
-  expenses: Expense[];
-  selectedCategory: string;
-  selectedDate: string;
-  minAmount: string;
-  maxAmount: string;
-  sortType: string;
-};
-
-type Action =
-  | { type: "ADD_EXPENSE"; payload: Expense }
-  | { type: "SET_EXPENSES"; payload: Expense[] }
-  | { type: "SET_CATEGORY"; payload: string }
-  | { type: "SET_DATE"; payload: string }
-  | { type: "SET_MIN_AMOUNT"; payload: string }
-  | { type: "SET_MAX_AMOUNT"; payload: string }
-  | { type: "SET_SORT"; payload: string };
-
-const initialState: State = {
-  expenses: [],
-  selectedCategory: "All",
-  selectedDate: "",
-  minAmount: "",
-  maxAmount: "",
-  sortType: "recent",
-};
-
-const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case "ADD_EXPENSE":
-      return {
-        ...state,
-        expenses: [action.payload, ...state.expenses],
-      };
-
-    case "SET_EXPENSES":
-      return {
-        ...state,
-        expenses: action.payload,
-      };
-
-    case "SET_CATEGORY":
-      return {
-        ...state,
-        selectedCategory: action.payload,
-      };
-
-    case "SET_DATE":
-      return {
-        ...state,
-        selectedDate: action.payload,
-      };
-
-    case "SET_MIN_AMOUNT":
-      return {
-        ...state,
-        minAmount: action.payload,
-      };
-
-    case "SET_MAX_AMOUNT":
-      return {
-        ...state,
-        maxAmount: action.payload,
-      };
-
-    case "SET_SORT":
-      return {
-        ...state,
-        sortType: action.payload,
-      };
-
-    default:
-      return state;
-  }
-};
+const categoryList = ["Food", "Travel", "Bills", "Other"];
 
 const EntryForm = () => {
-  const categoryList = ["Food", "Travel", "Bills", "Other"];
+  const [expenses, expenseDispatch] = useReducer(expenseReducer, []);
+  const [filters, filterDispatch] = useReducer(filterReducer, filterInitialState);
 
-  const [state, dispatch] = useReducer(reducer, initialState);
-
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const amt = e.target.amount.value;
-    const dte = e.target.date.value;
-    const ctg = e.target.category.value;
-    const note = e.target.note.value;
+    const form = e.currentTarget;
+    const amount = form.amount.value;
+    const date = form.date.value;
+    const category = form.category.value;
+    const note = form.note.value;
 
-    if (!amt || !dte || !ctg ) {
-      alert("Enter the Details First");
+    if (!amount || !date || !category) {
+      alert("Please fill in all required fields");
       return;
     }
 
-    const newExpense = {
-      amount: Number(amt),
-      category: ctg,
-      date: dte,
-      note: note,
-    };
+    expenseDispatch(
+      addExpense({ amount: Number(amount), category, date, note })
+    );
 
-    dispatch({ type: "ADD_EXPENSE", payload: newExpense });
-
-    (e.target as HTMLFormElement).reset();
+    form.reset();
   };
 
-  useEffect(() => {
-    const data = localStorage.getItem("expenses");
-    const parsed = data ? JSON.parse(data) : [];
+  // filtering
+  let filtered = expenses;
 
-    dispatch({ type: "SET_EXPENSES", payload: parsed });
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(state.expenses));
-  }, [state.expenses]);
-
-  // FILTERING (same logic)
-  let filteredExpenses = state.expenses;
-
-  if (state.selectedCategory !== "All") {
-    filteredExpenses = filteredExpenses.filter((exp) => {
-      return exp.category === state.selectedCategory;
-    });
+  if (filters.selectedCategory !== "All") {
+    filtered = filtered.filter((exp) => exp.category === filters.selectedCategory);
   }
 
-  if (state.selectedDate !== "") {
-    filteredExpenses = filteredExpenses.filter((exp) => {
-      return exp.date === state.selectedDate;
-    });
+  if (filters.selectedDate !== "") {
+    filtered = filtered.filter((exp) => exp.date === filters.selectedDate);
   }
 
-  if (state.minAmount !== "") {
-    filteredExpenses = filteredExpenses.filter((exp) => {
-      return exp.amount >= Number(state.minAmount);
-    });
+  if (filters.minAmount !== "") {
+    filtered = filtered.filter((exp) => exp.amount >= Number(filters.minAmount));
   }
 
-  if (state.maxAmount !== "") {
-    filteredExpenses = filteredExpenses.filter((exp) => {
-      return exp.amount <= Number(state.maxAmount);
-    });
+  if (filters.maxAmount !== "") {
+    filtered = filtered.filter((exp) => exp.amount <= Number(filters.maxAmount));
   }
 
-  // SORTING
-  if (state.sortType === "recent") {
-    filteredExpenses = filteredExpenses.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
+  // sorting
+  if (filters.sortType === "recent") {
+    filtered = [...filtered].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }
 
-  if (state.sortType === "highest") {
-    filteredExpenses = filteredExpenses.sort((a, b) => {
-      return b.amount - a.amount;
-    });
+  if (filters.sortType === "highest") {
+    filtered = [...filtered].sort((a, b) => b.amount - a.amount);
   }
 
-  // CATEGORY TOTALS
+  // category totals
   const categoryTotals: { [key: string]: number } = {};
 
-  state.expenses.forEach((exp) => {
-    if (categoryTotals[exp.category]) {
-      categoryTotals[exp.category] =
-        categoryTotals[exp.category] + exp.amount;
-    } else {
-      categoryTotals[exp.category] = exp.amount;
-    }
+  expenses.forEach((exp) => {
+    categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
   });
-let overallTotal = 0;
 
-state.expenses.forEach((exp) => {
-  overallTotal = overallTotal + exp.amount;
-});
-  
+  const overallTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
     <>
@@ -211,10 +105,9 @@ state.expenses.forEach((exp) => {
           <input name="note" type="text" />
         </div>
 
-        <button>Add Expense</button>
+        <button type="submit">Add Expense</button>
       </form>
 
-      {/* CATEGORY TOTALS */}
       <div>
         <h3>Category Totals</h3>
         {Object.keys(categoryTotals).map((cat) => (
@@ -225,22 +118,18 @@ state.expenses.forEach((exp) => {
           </div>
         ))}
       </div>
-      <div>
-  <h3>Overall Total</h3>
-  <p>₹{overallTotal}</p>
-</div>
 
-      {/* FILTERS */}
+      <div>
+        <h3>Overall Total</h3>
+        <p>₹{overallTotal}</p>
+      </div>
+
       <div>
         <h3>Filters</h3>
 
         <div>
           <label>Category:</label>
-          <select
-            onChange={(e) =>
-              dispatch({ type: "SET_CATEGORY", payload: e.target.value })
-            }
-          >
+          <select onChange={(e) => filterDispatch(setCategory(e.target.value))}>
             <option value="All">All</option>
             {categoryList.map((cat) => (
               <option key={cat} value={cat}>
@@ -252,51 +141,31 @@ state.expenses.forEach((exp) => {
 
         <div>
           <label>Date:</label>
-          <input
-            type="date"
-            onChange={(e) =>
-              dispatch({ type: "SET_DATE", payload: e.target.value })
-            }
-          />
+          <input type="date" onChange={(e) => filterDispatch(setDate(e.target.value))} />
         </div>
 
         <div>
           <label>Min Amount:</label>
-          <input
-            type="number"
-            onChange={(e) =>
-              dispatch({ type: "SET_MIN_AMOUNT", payload: e.target.value })
-            }
-          />
+          <input type="number" onChange={(e) => filterDispatch(setMinAmount(e.target.value))} />
         </div>
 
         <div>
           <label>Max Amount:</label>
-          <input
-            type="number"
-            onChange={(e) =>
-              dispatch({ type: "SET_MAX_AMOUNT", payload: e.target.value })
-            }
-          />
+          <input type="number" onChange={(e) => filterDispatch(setMaxAmount(e.target.value))} />
         </div>
 
         <div>
           <label>Sort:</label>
-          <select
-            onChange={(e) =>
-              dispatch({ type: "SET_SORT", payload: e.target.value })
-            }
-          >
+          <select onChange={(e) => filterDispatch(setSort(e.target.value))}>
             <option value="recent">Most Recent</option>
             <option value="highest">Highest Amount</option>
           </select>
         </div>
       </div>
 
-      {/* FINAL LIST */}
       <div>
         <h3>Expenses</h3>
-        {filteredExpenses.map((exp, index) => (
+        {filtered.map((exp, index) => (
           <div key={index}>
             <p>
               ₹{exp.amount} | {exp.category} | {exp.date}
