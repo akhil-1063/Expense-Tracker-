@@ -6,9 +6,14 @@ export const addExpense = (expense: Expense) => ({
   payload: expense,
 });
 
-export const setExpenses = (expenses: Expense[]) => ({
-  type: "set_expenses" as const,
-  payload: expenses,
+export const deleteExpense = (id: number) => ({
+  type: "delete_expense" as const,
+  payload: id,
+});
+
+export const editExpense = (expense: Expense) => ({
+  type: "edit_expense" as const,
+  payload: expense,
 });
 
 // filter action creators
@@ -35,4 +40,9 @@ export const setMaxAmount = (amount: string) => ({
 export const setSort = (sort: string) => ({
   type: "set_sort" as const,
   payload: sort,
+});
+
+export const setSearch = (search: string) => ({
+  type: "set_search" as const,
+  payload: search,
 });
