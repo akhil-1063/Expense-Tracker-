@@ -197,9 +197,9 @@ const EntryForm = () => {
         <hr className="border-pink-200" />
 
         <div>
-          <h2 className="text-pink-500 font-bold mb-3">Spending Breakdown</h2>
+          <h2 className="text-pink-500 font-bold mb-3">Chart </h2>
           {Object.keys(categoryTotals).length === 0 ? (
-            <p className="text-pink-300 text-sm">No expenses yet</p>
+            <p className="text-pink-300 text-sm">No expenses</p>
           ) : (
             <>
               {Object.keys(categoryTotals).map((cat) => (
@@ -215,10 +215,10 @@ const EntryForm = () => {
                       <Cell key={i} fill={chartColors[i % chartColors.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `₹${value}`} />
+                  <Tooltip formatter={(value) => `${value}`} />
                   <Legend />
                 </PieChart>
-                <p className="text-pink-700 font-bold text-lg mt-2">Total: ₹{overallTotal}</p>
+                <p className="text-pink-700 font-bold text-lg mt-2">Total: Rs.{overallTotal}</p>
               </div>
             </>
           )}
@@ -227,7 +227,7 @@ const EntryForm = () => {
         <hr className="border-pink-200" />
 
         <div>
-          <h2 className="text-pink-500 font-bold mb-3">Search & Filters</h2>
+          <h2 className="text-pink-500 font-bold mb-3"> Filters</h2>
           <div className="space-y-3">
             <div>
               <label className={labelClass}>Search</label>
