@@ -1,6 +1,6 @@
 import type { Expense } from "../reducers/expenseReducer";
 
-// expense action creators
+
 export const addExpense = (expense: Expense) => ({
   type: "add_expense" as const,
   payload: expense,
@@ -16,7 +16,7 @@ export const editExpense = (expense: Expense) => ({
   payload: expense,
 });
 
-// filter action creators
+
 export const setCategory = (category: string) => ({
   type: "set_category" as const,
   payload: category,
